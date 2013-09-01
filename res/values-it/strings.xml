@@ -125,9 +125,14 @@
     <string name="calendar_reminders_only_title">Solo avvisi</string>
     <string name="calendar_reminders_only_summary">Visualizza solo eventi con avvisi</string>
     <string name="calendar_hide_allday_title">Nascondi eventi del giorno</string>
+    <string name="calendar_icon_title">Icona calendario</string>
     <string name="calendar_lookahead_title">Anticipo eventi</string>
     <string name="calendar_show_location_title">Posizione evento</string>
     <string name="calendar_show_description_title">Descrizione evento</string>
+    <string name="calendar_upcoming_events_category">Eventi prossimi</string>
+    <string name="calendar_highlight_upcoming_events_title">Evidenzia eventi</string>
+    <string name="calendar_highlight_upcoming_events_summary">Evidenzia gli eventi del giorno e, dopo le 20:00, anche quelli del giorno dopo</string>
+    <string name="calendar_highlight_upcoming_events_bold">Grassetto</string>
     <string name="font_color">Colore carattere</string>
     <string name="font_color_alarm">Colore carattere sveglia</string>
     <string name="font_color_timestamp">Colore carattere timestamp</string>
@@ -135,6 +140,7 @@
     <string name="calendar_lookahead_3hrs">3 ore</string>
     <string name="calendar_lookahead_6hrs">6 ore</string>
     <string name="calendar_lookahead_12hrs">12 ore</string>
+    <string name="calendar_lookahead_today">Oggi</string>
     <string name="calendar_lookahead_1day">1 giorno</string>
     <string name="calendar_lookahead_3days">3 giorni</string>
     <string name="calendar_lookahead_1wk">1 settimana</string>

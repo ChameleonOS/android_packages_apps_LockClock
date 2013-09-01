@@ -48,9 +48,14 @@ public class ClockWidgetService extends IntentService {
 
     public static final String ACTION_REFRESH = "com.cyanogenmod.lockclock.action.REFRESH_WIDGET";
     public static final String ACTION_REFRESH_CALENDAR = "com.cyanogenmod.lockclock.action.REFRESH_CALENDAR";
+    public static final String ACTION_HIDE_CALENDAR = "com.cyanogenmod.lockclock.action.HIDE_CALENDAR";
+
+    // This needs to be static to persist between refreshes until explicitly changed by an intent
+    private static boolean mHideCalendar = false;
 
     private int[] mWidgetIds;
     private AppWidgetManager mAppWidgetManager;
+
     public ClockWidgetService() {
         super("ClockWidgetService");
     }
@@ -67,12 +72,22 @@ public class ClockWidgetService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         if (D) Log.d(TAG, "Got intent " + intent);
-        if (intent != null && ACTION_REFRESH_CALENDAR.equals(intent.getAction())) {
-            if (D) Log.v(TAG, "Forcing a calendar refresh");
-            mAppWidgetManager.notifyAppWidgetViewDataChanged(mWidgetIds, R.id.calendar_list);
-        }
 
         if (mWidgetIds != null && mWidgetIds.length != 0) {
+            // Check passed in intents
+            if (intent != null) {
+                if (ACTION_HIDE_CALENDAR.equals(intent.getAction())) {
+                    if (D) Log.v(TAG, "Force hiding the calendar panel");
+                    // Explicitly hide the panel since we received a broadcast indicating no events
+                    mHideCalendar = true;
+                } else if (ACTION_REFRESH_CALENDAR.equals(intent.getAction())) {
+                    if (D) Log.v(TAG, "Forcing a calendar refresh");
+                    // Start with the panel not explicitly hidden
+                    // If there are no events, a broadcast to the service will hide the panel
+                    mHideCalendar = false;
+                    mAppWidgetManager.notifyAppWidgetViewDataChanged(mWidgetIds, R.id.calendar_list);
+                }
+            }
             refreshWidget();
         }
     }
@@ -86,10 +101,10 @@ public class ClockWidgetService extends IntentService {
         boolean digitalClock = Preferences.showDigitalClock(this);
         boolean showWeather = Preferences.showWeather(this);
         boolean showWeatherWhenMinimized = Preferences.showWeatherWhenMinimized(this);
-        boolean showCalendar = false;
 
         // Update the widgets
         for (int id : mWidgetIds) {
+            boolean showCalendar = false;
 
             // Determine which layout to use
             boolean smallWidget = showWeather && showWeatherWhenMinimized
@@ -102,23 +117,28 @@ public class ClockWidgetService extends IntentService {
                 showCalendar = false;
             } else {
                 remoteViews = new RemoteViews(getPackageName(), R.layout.appwidget);
-                showCalendar = Preferences.showCalendar(this);
-            }
-
-            // Always Refresh the Clock widget
-            refreshClock(remoteViews, smallWidget, digitalClock);
-            refreshAlarmStatus(remoteViews, smallWidget);
-
-            // Don't bother with Calendar if its not enabled
-            if (showCalendar) {
-                refreshCalendar(remoteViews, id);
+                // show calendar if enabled and events available and enough space available
+                showCalendar = Preferences.showCalendar(this) && !mHideCalendar
+                        && WidgetUtils.canFitCalendar(this, id, digitalClock);
             }
 
             // Hide the Loading indicator
             remoteViews.setViewVisibility(R.id.loading_indicator, View.GONE);
 
+            // Always Refresh the Clock widget
+            refreshClock(remoteViews, smallWidget, digitalClock);
+            refreshAlarmStatus(remoteViews, smallWidget);
+
+            // Don't bother with Calendar if its not visible
+            if (showCalendar) {
+                refreshCalendar(remoteViews, id);
+            }
+            // Hide the calendar panel if not visible
+            remoteViews.setViewVisibility(R.id.calendar_panel, showCalendar ? View.VISIBLE : View.GONE);
+
+            boolean canFitWeather = smallWidget || WidgetUtils.canFitWeather(this, id, digitalClock);
             // Now, if we need to show the actual weather, do so
-            if (showWeather) {
+            if (showWeather && canFitWeather) {
                 WeatherInfo weatherInfo = Preferences.getCachedWeatherInfo(this);
 
                 if (weatherInfo != null) {
@@ -127,22 +147,12 @@ public class ClockWidgetService extends IntentService {
                     setNoWeatherData(remoteViews, smallWidget);
                 }
             }
+            remoteViews.setViewVisibility(R.id.weather_panel, (showWeather && canFitWeather) ? View.VISIBLE : View.GONE);
 
             // Resize the clock font if needed
             if (digitalClock) {
                 float ratio = WidgetUtils.getScaleRatio(this, id);
                 setClockSize(remoteViews, ratio);
-            }
-
-            if (showWeather) {
-                boolean canFitWeather = smallWidget || WidgetUtils.canFitWeather(this, id, digitalClock);
-                remoteViews.setViewVisibility(R.id.weather_panel, canFitWeather ? View.VISIBLE : View.GONE);
-            }
-
-            // Hide the calendar panel if there is no space for it
-            if (showCalendar) {
-                boolean canFitCalendar = WidgetUtils.canFitCalendar(this, id, digitalClock);
-                remoteViews.setViewVisibility(R.id.calendar_panel, canFitCalendar ? View.VISIBLE : View.GONE);
             }
 
             // Do the update
@@ -156,7 +166,7 @@ public class ClockWidgetService extends IntentService {
     private void refreshClock(RemoteViews clockViews, boolean smallWidget, boolean digitalClock) {
         // Analog or Digital clock
         if (digitalClock) {
-            // Hours/Minutes is specific to Didital, set it's size
+            // Hours/Minutes is specific to Digital, set it's size
             refreshClockFont(clockViews);
             clockViews.setViewVisibility(R.id.digital_clock, View.VISIBLE);
             clockViews.setViewVisibility(R.id.analog_clock, View.GONE);
@@ -169,10 +179,11 @@ public class ClockWidgetService extends IntentService {
         refreshDateAlarmFont(clockViews, smallWidget);
 
         // Register an onClickListener on Clock, starting DeskClock
-        ComponentName clk = new ComponentName("com.android.deskclock", "com.android.deskclock.DeskClock");
-        Intent i = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setComponent(clk);
-        PendingIntent pi = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
-        clockViews.setOnClickPendingIntent(R.id.clock_panel, pi);
+        Intent i = WidgetUtils.getDefaultClockIntent(this);
+        if (i != null) {
+            PendingIntent pi = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
+            clockViews.setOnClickPendingIntent(R.id.clock_panel, pi);
+        }
     }
 
     private void refreshClockFont(RemoteViews clockViews) {
@@ -395,8 +406,14 @@ public class ClockWidgetService extends IntentService {
     private void refreshCalendar(RemoteViews calendarViews, int widgetId) {
         // Calendar icon: Overlay the selected color and set the imageview
         int color = Preferences.calendarFontColor(this);
-        calendarViews.setImageViewBitmap(R.id.calendar_icon,
-                WidgetUtils.getOverlaidBitmap(this, R.drawable.ic_lock_idle_calendar, color));
+
+        // Hide the icon if preference set
+        if (Preferences.showCalendarIcon(this)) {
+            calendarViews.setImageViewBitmap(R.id.calendar_icon,
+                    WidgetUtils.getOverlaidBitmap(this, R.drawable.ic_lock_idle_calendar, color));
+        } else {
+            calendarViews.setImageViewBitmap(R.id.calendar_icon, null);
+        }
 
         // Set up and start the Calendar RemoteViews service
         final Intent remoteAdapterIntent = new Intent(this, CalendarWidgetService.class);

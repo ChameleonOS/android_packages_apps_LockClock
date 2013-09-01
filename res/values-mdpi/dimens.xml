@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2007 The Android Open Source Project
+<!-- Copyright (C) 2012 The Android Open Source Project
+     Copyright (C) 2012 The CyanogenMod Project (DvTonder)
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,7 +15,14 @@
      limitations under the License.
 -->
 
+<!-- These resources are around just to allow their values to be customized
+     for different hardware and product builds. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="abbrev_wday_month_day_no_year">EEE, d MMMM</string>
-    <string name="full_wday_month_day_no_year">EEEE, d MMMM</string>
+
+    <dimen name="widget_big_font_size">64dp</dimen>
+    <dimen name="widget_medium_font_size">40dp</dimen>
+    <dimen name="label_font_size">12sp</dimen>
+
+    <dimen name="min_digital_widget_height">100dip</dimen>
+
 </resources>

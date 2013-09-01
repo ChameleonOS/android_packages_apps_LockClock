@@ -51,16 +51,22 @@ public class Constants {
     public static final String CALENDAR_LOOKAHEAD = "calendar_lookahead";
     public static final String CALENDAR_REMINDERS_ONLY = "calendar_reminders_only";
     public static final String CALENDAR_HIDE_ALLDAY = "calendar_hide_allday";
+    public static final String CALENDAR_ICON="calendar_icon";
     public static final String CALENDAR_SHOW_LOCATION = "calendar_show_location";
     public static final String CALENDAR_SHOW_DESCRIPTION = "calendar_show_description";
     public static final String CALENDAR_FONT_COLOR = "calendar_font_color";
     public static final String CALENDAR_DETAILS_FONT_COLOR = "calendar_details_font_color";
+    public static final String CALENDAR_HIGHLIGHT_UPCOMING_EVENTS = "calendar_highlight_upcoming_events";
+    public static final String CALENDAR_UPCOMING_EVENTS_BOLD = "calendar_highlight_upcoming_events_bold";
+    public static final String CALENDAR_UPCOMING_EVENTS_FONT_COLOR = "calendar_highlight_upcoming_events_font_color";
+    public static final String CALENDAR_UPCOMING_EVENTS_DETAILS_FONT_COLOR = "calendar_highlight_upcoming_events_details_font_color";
 
     // other shared pref entries
     public static final String WEATHER_LAST_UPDATE = "last_weather_update";
     public static final String WEATHER_DATA = "weather_data";
 
     public static final int MAX_CALENDAR_ITEMS = 10;
+    public static final long CALENDAR_UPCOMING_EVENTS_FROM_HOUR = 20L;
     public static final int CALENDAR_FORMAT_TIME =
             DateUtils.FORMAT_SHOW_TIME
             | DateUtils.FORMAT_NO_NOON
